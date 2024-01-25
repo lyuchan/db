@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="google" content="notranslate">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Control Panel login</title>
+    <script src="./src/sweetalert2.min.js"></script>
+    <link rel="stylesheet" href="./src/sweetalert2.min.css">
+    <script src="./src/reconnecting-websocket.min.js"></script>
+    <link rel="stylesheet" href="./style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+
+<body style="background-color: #01131e;">
+    <script>
+        let token;
+        let urlold = window.location.href//取得當前網址
+        let url = urlold.replace("https://", "");//去除https
+        url = url.replace("http://", "");//去除http
+        url = url.replace("dbmeter", "");//去除/
+        url = url.split('/')[0];
+        url = url.replace("/", "");//去除/
+        url2 = url
+        url = "ws://" + url;//加入ws://
+        let first = 0;
+        var ws = new ReconnectingWebSocket(url)
+        ws.reconnectDecay = 1;
+        ws.onopen = () => {
+            //src2.innerHTML = "<h2>已與伺服器連線</h2>"
+            if (first == 0) {
+                first++;
+
+            } else {
+
+            }
+        }
+        ws.onmessage = event => {
+            let res = JSON.parse(event.data);
+            if (res.service == "dbmeter") {
+                if (res.get == "checktoken") {
+                    if (res.token == token) {
+                        document.location.href = `./remote?token=${token}`;
+                        console.log('good')
+                    }
+                }
+            }
+        }
+        ws.onerror = (error) => {
+
+        };
+        ws.onclose = () => {
+
+        }
+        Swal.fire({
+            title: `
+                <h1 class="title">分貝計<br><span style='font-size:25px'>遠端監控軟體</h1>
+                `,
+            text: 'Please input your id:',
+            input: 'text',
+            inputAttributes: {
+                autocapitalize: 'off'
+            },
+            customClass: {
+                select: 'custom-swal-select',
+            },
+            showCancelButton: true,
+            confirmButtonText: 'Login',
+            //showLoaderOnConfirm: false,
+
+            // allowOutsideClick: false,
+            // allowEscapeKey: false,
+            preConfirm: async (login) => {
+                //post to /login
+                token = login
+                console.log(login)
+                await new Promise((resolve) => {
+                    setTimeout(() => {
+                        ws.send(JSON.stringify({ service: "dbmeter", get: "checktokens", token: login }));
+                        resolve();
+                    }, 10);
+                });
+
+                await new Promise((resolve) => {
+                    setTimeout(() => {
+                        //  a();
+                        //  Swal.hideLoading();
+                        console.log("End preConfirm");
+                        Swal.showValidationMessage('未有主機端使用此代碼');
+                        resolve();
+                    }, 1000);
+                });
+
+            },
+        }).then((result) => {
+            if (result.isDismissed) {
+                window.location.reload();
+            }
+        })
+    </script>
+</body>
+
+</html>
